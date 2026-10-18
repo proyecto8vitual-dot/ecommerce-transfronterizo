@@ -65,12 +65,12 @@ export default function IniciarSesion() {
               ¿No tienes una cuenta?
             </p>
 
-            <button
-              type="button"
-              className="mt-2 font-semibold text-blue-600 hover:underline"
+           <a
+             href="/registro"
+            className="mt-2 inline-block font-semibold text-blue-600 hover:underline"
             >
-              Crear una cuenta
-            </button>
+            Crear una cuenta
+            </a>
           </div>
         </div>
       </section>
