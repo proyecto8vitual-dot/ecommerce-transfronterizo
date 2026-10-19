@@ -1,6 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import BarraNavegacion from "@/componentes/BarraNavegacion";
 
-const productos = [
+interface Producto {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  origen: string;
+  bandera: string;
+}
+
+interface ProductoCarrito extends Producto {
+  cantidad: number;
+}
+
+const productos: Producto[] = [
   {
     id: 1,
     nombre: "Laptop profesional",
@@ -36,6 +54,71 @@ const productos = [
 ];
 
 export default function Catalogo() {
+  const router = useRouter();
+
+  const [verificandoSesion, setVerificandoSesion] = useState(true);
+  const [mensaje, setMensaje] = useState("");
+
+  useEffect(() => {
+    const tokenAcceso = localStorage.getItem("token_acceso");
+    const usuarioGuardado = localStorage.getItem("usuario");
+
+    // Si no existe una sesión, regresar al inicio de sesión
+    if (!tokenAcceso || !usuarioGuardado) {
+      router.replace("/iniciar-sesion");
+      return;
+    }
+
+    setVerificandoSesion(false);
+  }, [router]);
+
+  const agregarAlCarrito = (producto: Producto) => {
+    const carritoGuardado = localStorage.getItem("carrito");
+
+    let carrito: ProductoCarrito[] = carritoGuardado
+      ? JSON.parse(carritoGuardado)
+      : [];
+
+    const productoExistente = carrito.find(
+      (productoCarrito) => productoCarrito.id === producto.id
+    );
+
+    if (productoExistente) {
+      carrito = carrito.map((productoCarrito) =>
+        productoCarrito.id === producto.id
+          ? {
+              ...productoCarrito,
+              cantidad: productoCarrito.cantidad + 1,
+            }
+          : productoCarrito
+      );
+    } else {
+      carrito.push({
+        ...producto,
+        cantidad: 1,
+      });
+    }
+
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+
+    setMensaje(`${producto.nombre} agregado al carrito.`);
+
+    setTimeout(() => {
+      setMensaje("");
+    }, 2000);
+  };
+
+  // Evita mostrar el catálogo mientras se comprueba la sesión
+  if (verificandoSesion) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-100">
+        <p className="text-lg font-medium text-gray-600">
+          Verificando sesión...
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-100">
       <BarraNavegacion />
@@ -49,6 +132,12 @@ export default function Catalogo() {
           <p className="mt-3 text-gray-600">
             Explora productos disponibles para comercio transfronterizo.
           </p>
+
+          {mensaje && (
+            <div className="mt-5 rounded-lg bg-green-100 px-4 py-3 font-medium text-green-800">
+              {mensaje}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -78,12 +167,25 @@ export default function Catalogo() {
                   ${producto.precio} USD
                 </p>
 
-                <button className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700">
+                <button
+                  type="button"
+                  onClick={() => agregarAlCarrito(producto)}
+                  className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+                >
                   Agregar al carrito
                 </button>
               </div>
             </article>
           ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <a
+            href="/carrito"
+            className="inline-block rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-800"
+          >
+            Ver carrito
+          </a>
         </div>
       </section>
     </main>

@@ -1,0 +1,24 @@
+# Variables de entorno y credenciales
+.env
+.env.local
+.env.*
+!.env.example
+
+# Python / Django
+__pycache__/
+*.py[cod]
+venv/
+backend/venv/
+*.sqlite3
+
+# Next.js
+node_modules/
+.next/
+out/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,19 +1,112 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import BarraNavegacion from "@/componentes/BarraNavegacion";
 
-export default function CostoImportacion() {
-  // Valores de ejemplo para el maquetado
-  const subtotalProductos = 1057;
-  const transporte = 120;
-  const aranceles = 84.56;
-  const impuestos = 201.88;
-  const otrosCostos = 25;
+interface ProductoCarrito {
+  id: number;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+}
 
-  const costoTotal =
-    subtotalProductos +
-    transporte +
-    aranceles +
-    impuestos +
-    otrosCostos;
+interface ResultadoLandedCost {
+  subtotal_productos: number;
+  transporte: number;
+  aranceles: number;
+  impuestos: number;
+  otros_costos: number;
+  costo_total: number;
+}
+
+export default function CostoImportacion() {
+  const router = useRouter();
+
+  const [productos, setProductos] = useState<ProductoCarrito[]>([]);
+  const [paisOrigen, setPaisOrigen] = useState("Estados Unidos");
+  const [paisDestino, setPaisDestino] = useState("México");
+  const [metodoTransporte, setMetodoTransporte] = useState("maritimo");
+
+  const [resultado, setResultado] =
+    useState<ResultadoLandedCost | null>(null);
+
+  const [calculando, setCalculando] = useState(false);
+  const [mensajeError, setMensajeError] = useState("");
+
+  useEffect(() => {
+    const tokenAcceso = localStorage.getItem("token_acceso");
+    const usuarioGuardado = localStorage.getItem("usuario");
+
+    if (!tokenAcceso || !usuarioGuardado) {
+      router.replace("/iniciar-sesion");
+      return;
+    }
+
+    const carritoGuardado = localStorage.getItem("carrito");
+
+    if (carritoGuardado) {
+      try {
+        setProductos(JSON.parse(carritoGuardado));
+      } catch {
+        setProductos([]);
+      }
+    }
+  }, [router]);
+
+  const solicitarLandedCost = async () => {
+    if (productos.length === 0) {
+      setMensajeError(
+        "No hay productos en el carrito."
+      );
+      return;
+    }
+
+    setCalculando(true);
+    setMensajeError("");
+    setResultado(null);
+
+    try {
+      const tokenAcceso = localStorage.getItem("token_acceso");
+      const respuesta = await fetch(
+        "http://127.0.0.1:8000/api/cuentas/landed-cost/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${tokenAcceso}`,
+          },
+          body: JSON.stringify({
+            productos: productos,
+            pais_origen: paisOrigen,
+            pais_destino: paisDestino,
+            metodo_transporte: metodoTransporte,
+          }),
+        }
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        setMensajeError(
+          datos.mensaje ||
+            "No fue posible calcular el Landed Cost."
+        );
+        return;
+      }
+
+      setResultado(datos);
+    } catch (error) {
+      console.error(error);
+
+      setMensajeError(
+        "No fue posible conectar con el servidor."
+      );
+    } finally {
+      setCalculando(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-100">
@@ -25,12 +118,12 @@ export default function CostoImportacion() {
         </h1>
 
         <p className="mt-3 text-gray-600">
-          Calcula el costo estimado de importar tus productos hasta el país de
-          destino.
+          Calcula el costo estimado de importar tus productos
+          hasta el país de destino.
         </p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          {/* Datos de la importación */}
+
           <section className="rounded-xl bg-white p-7 shadow-md">
             <h2 className="text-2xl font-bold text-gray-900">
               Datos de importación
@@ -41,7 +134,13 @@ export default function CostoImportacion() {
                 País de origen
               </label>
 
-              <select className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900">
+              <select
+                value={paisOrigen}
+                onChange={(evento) =>
+                  setPaisOrigen(evento.target.value)
+                }
+                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900"
+              >
                 <option>Estados Unidos</option>
                 <option>China</option>
               </select>
@@ -52,7 +151,13 @@ export default function CostoImportacion() {
                 País de destino
               </label>
 
-              <select className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900">
+              <select
+                value={paisDestino}
+                onChange={(evento) =>
+                  setPaisDestino(evento.target.value)
+                }
+                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900"
+              >
                 <option>México</option>
                 <option>Estados Unidos</option>
                 <option>China</option>
@@ -64,69 +169,115 @@ export default function CostoImportacion() {
                 Método de transporte
               </label>
 
-              <select className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900">
-                <option>Transporte marítimo</option>
-                <option>Transporte aéreo</option>
-                <option>Transporte terrestre</option>
+              <select
+                value={metodoTransporte}
+                onChange={(evento) =>
+                  setMetodoTransporte(evento.target.value)
+                }
+                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900"
+              >
+                <option value="maritimo">
+                  Transporte marítimo
+                </option>
+
+                <option value="aereo">
+                  Transporte aéreo
+                </option>
+
+                <option value="terrestre">
+                  Transporte terrestre
+                </option>
               </select>
             </div>
 
-            <button className="mt-7 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700">
-              Solicitar Landed Cost
+            {mensajeError && (
+              <div className="mt-5 rounded-lg bg-red-100 p-4 text-red-700">
+                {mensajeError}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={solicitarLandedCost}
+              disabled={calculando}
+              className="mt-7 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              {calculando
+                ? "Calculando..."
+                : "Solicitar Landed Cost"}
             </button>
           </section>
 
-          {/* Desglose del costo */}
           <section className="rounded-xl bg-white p-7 shadow-md">
             <h2 className="text-2xl font-bold text-gray-900">
               Desglose estimado
             </h2>
 
-            <div className="mt-6 space-y-4 text-gray-700">
-              <div className="flex justify-between">
-                <span>Productos</span>
-                <span>${subtotalProductos.toFixed(2)} USD</span>
+            {!resultado ? (
+              <div className="mt-6 rounded-lg bg-gray-100 p-6 text-center text-gray-500">
+                Solicita el Landed Cost para visualizar
+                el desglose calculado por el servidor.
               </div>
+            ) : (
+              <>
+                <div className="mt-6 space-y-4 text-gray-700">
+                  <div className="flex justify-between">
+                    <span>Productos</span>
+                    <span>
+                      ${resultado.subtotal_productos.toFixed(2)} USD
+                    </span>
+                  </div>
 
-              <div className="flex justify-between">
-                <span>Transporte</span>
-                <span>${transporte.toFixed(2)} USD</span>
-              </div>
+                  <div className="flex justify-between">
+                    <span>Transporte</span>
+                    <span>
+                      ${resultado.transporte.toFixed(2)} USD
+                    </span>
+                  </div>
 
-              <div className="flex justify-between">
-                <span>Aranceles</span>
-                <span>${aranceles.toFixed(2)} USD</span>
-              </div>
+                  <div className="flex justify-between">
+                    <span>Aranceles</span>
+                    <span>
+                      ${resultado.aranceles.toFixed(2)} USD
+                    </span>
+                  </div>
 
-              <div className="flex justify-between">
-                <span>Impuestos</span>
-                <span>${impuestos.toFixed(2)} USD</span>
-              </div>
+                  <div className="flex justify-between">
+                    <span>Impuestos</span>
+                    <span>
+                      ${resultado.impuestos.toFixed(2)} USD
+                    </span>
+                  </div>
 
-              <div className="flex justify-between">
-                <span>Otros costos</span>
-                <span>${otrosCostos.toFixed(2)} USD</span>
-              </div>
-            </div>
+                  <div className="flex justify-between">
+                    <span>Otros costos</span>
+                    <span>
+                      ${resultado.otros_costos.toFixed(2)} USD
+                    </span>
+                  </div>
+                </div>
 
-            <div className="mt-6 border-t pt-6">
-              <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-gray-900">
-                  Landed Cost total
-                </span>
+                <div className="mt-6 border-t pt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-xl font-bold text-gray-900">
+                      Landed Cost total
+                    </span>
 
-                <span className="text-3xl font-bold text-blue-600">
-                  ${costoTotal.toFixed(2)} USD
-                </span>
-              </div>
-            </div>
+                    <span className="text-3xl font-bold text-blue-600">
+                      ${resultado.costo_total.toFixed(2)} USD
+                    </span>
+                  </div>
+                </div>
 
-            <div className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
-              Este cálculo es una estimación. El costo final dependerá de
-              tarifas, clasificación arancelaria, impuestos y condiciones de
-              transporte.
-            </div>
+                <div className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
+                  Este cálculo es una estimación. El costo final
+                  dependerá de tarifas, clasificación arancelaria,
+                  impuestos y condiciones de transporte.
+                </div>
+              </>
+            )}
           </section>
+
         </div>
       </section>
     </main>
