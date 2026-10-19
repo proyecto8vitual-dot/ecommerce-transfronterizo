@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     ".onrender.com",
+    "ecommerce-transfronterizo.netlify.app",
 ]
 
 
@@ -148,6 +149,7 @@ MAILERS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://ecommerce-transfronterizo.netlify.app",
 ]
 
 
