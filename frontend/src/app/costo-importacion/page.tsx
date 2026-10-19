@@ -70,7 +70,7 @@ export default function CostoImportacion() {
     try {
       const tokenAcceso = localStorage.getItem("token_acceso");
       const respuesta = await fetch(
-        "http://127.0.0.1:8000/api/cuentas/landed-cost/",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/cuentas/landed-cost/`,
         {
           method: "POST",
           headers: {

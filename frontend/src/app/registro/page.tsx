@@ -35,7 +35,7 @@ export default function Registro() {
 
     try {
       const respuesta = await fetch(
-        "http://127.0.0.1:8000/api/cuentas/registro/",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/cuentas/registro/`,
         {
           method: "POST",
           headers: {

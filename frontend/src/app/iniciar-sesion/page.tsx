@@ -21,7 +21,7 @@ export default function IniciarSesion() {
 
     try {
       const respuesta = await fetch(
-        "http://127.0.0.1:8000/api/cuentas/iniciar-sesion/",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/cuentas/iniciar-sesion/`,
         {
           method: "POST",
           headers: {
